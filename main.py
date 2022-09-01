@@ -110,4 +110,44 @@ integerModel.add_constraint(0.5 * desk + 0.4 * cell <= 492)
 si = integerModel.solve()
 integerModel.print_solution()
 
+## Set up decision variables
+
 #Modeling yes/no decisions with binary variables
+telephoneModel2 = Model('decision_phone')
+#two variables per machine type
+desk = telephoneModel2.integer_var(name='desk', lb=100) #lower bound of this variable is 100
+cell = telephoneModel2.continuous_var(name='cell', lb=100)
+#production on desk and cell phones for original machine
+desk1 = telephoneModel2.integer_var(name='desk1')
+cell1 = telephoneModel2.integer_var(name='cell1')
+#production on desk and cell phones for new machine (manufactures cell phones faster in 15 mins, but desktop phones slower in 18 mins)
+desk2 = telephoneModel2.integer_var(name='desk2')
+cell2 = telephoneModel2.integer_var(name='cell2')
+
+#boolean yes/no variable (aka binary variable)
+z = telephoneModel2.binary_var(name='z')
+
+
+## Set up constraints
+telephoneModel2.add_constraint(desk == desk1 + desk2)
+telephoneModel2.add_constraint(cell == cell1 + cell2)
+
+#production on original assembly machine must be <=400 if the 'z' boolean variable is true
+#this is the case when z = 1, as we get <= 400 * 1 <-> <=400.
+telephoneModel2.add_constraint(0.2 * desk1 + 0.4 * cell1 <= 400 * z)
+
+#production on new assembly machine must be <= 430 if the 'z' variable is false.
+#1-z is 1 (true) if z is 0 (false). So this is basically saying "if !z, then..."
+telephoneModel2.add_constraint(0.25 * desk2 + 0.3 * cell2 <= 430 * (1-z))
+
+#painting machine limit: identical to original problem
+telephoneModel2.add_constraint(0.5 * desk + 0.4 * cell <= 400)
+
+# EXPRESSING THE OBJECTIVE:
+# objective here is identical to original telephone problem: maximize total profit, using total productions.
+telephoneModel2.maximize(12 * desk + 20 * cell)
+
+#now, SOLVE the model:
+telephoneModel2Solution = telephoneModel2.solve(log_output=True)
+assert telephoneModel2
+telephoneModel2.print_solution()
